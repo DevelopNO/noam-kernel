@@ -85,3 +85,44 @@ before deciding whether to reuse code or implement the initial skeleton.
 
 This kernel is a separate project from Noam's security sensor, which is planned
 around Linux, Go and C/eBPF. Keep sensor implementation in its own repository.
+
+
+## Guided learning mode
+
+The owner clarified on 2026-11-06 that understanding and hands-on reconstruction
+are the primary goals. Apply this mode to future work, including work suggested
+by older progress notes.
+
+Before implementing another kernel feature, work through LEARNING.md with the
+owner. Begin by explaining and experimenting with the existing boot milestone.
+Treat existing execution evidence and the owner's demonstrated understanding as
+separate progress dimensions.
+
+For each lesson:
+1. Explain one mechanism and the exact source lines involved.
+2. Ask the owner to predict one observable outcome.
+3. Offer a small task for the owner to perform or direct. Give hints before a
+   complete solution unless the owner requests the solution.
+4. Run the agreed experiment, show the actual output and relevant diff, and
+   explain what the result establishes.
+5. Record understanding, remaining questions, experiment evidence and the next
+   lesson. Wait for the owner's explicit instruction before advancing.
+
+If running non-interactively, summarize the current lesson and next exercise.
+Never mark a lesson understood or advance based on elapsed time or successful CI.
+
+Preserve the current working kernel as a reference. At the start of learning,
+record the full baseline commit SHA. Create an annotated tag named
+checkpoint/boot-reference if absent, and never move an existing checkpoint.
+Use small lesson branches and commits. After an understood, verified lesson,
+create a new checkpoint tag if requested by the owner. Keep intentional failures
+in clearly named experiment branches and document their expected symptoms.
+Keep the baseline and main history intact. Avoid force pushes.
+
+For reconstruction, add a separate learning workspace or branch only when the
+owner starts that exercise. Explain whether a lesson uses a provided loader or
+bootstrap scaffold and exactly what the owner is implementing. Choose a small
+observable step; do not require an unexplained full 64-bit bootstrap as the first
+exercise.
+
+Repository documentation, comments, commits and PR text remain English.
