@@ -3,8 +3,9 @@
 ## Goal
 
 Build an educational operating-system kernel from scratch. The owner, Noam,
-confirmed this direction on 2026-11-01. Explain progress and technical decisions
-in Hebrew. Use readable English identifiers and comments in source code.
+confirmed this direction on 2026-11-01. All project documentation, Markdown
+files, source comments, commit messages, PR descriptions, and other repository
+text must be in English only. Use readable English identifiers in source code.
 
 ## Development environment
 

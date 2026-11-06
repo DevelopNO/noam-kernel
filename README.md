@@ -1,12 +1,13 @@
 # Noam Kernel
 
-קרנל לימודי ל־x86_64, כתוב ב־C11 וב־GNU Assembly. אבן הדרך הראשונה
-ממומשת: טעינת Multiboot v1, מעבר ל־64 ביט והדפסת `KERNEL_BOOT_OK` מתוך הקרנל.
+An educational x86_64 kernel written in C11 and GNU Assembly. The first milestone
+is implemented: Multiboot v1 loading, entry into 64-bit mode, and printing
+`KERNEL_BOOT_OK` from the kernel.
 
-## סביבת פיתוח ובנייה
+## Development environment and build
 
-נדרשת סביבת Linux x86_64 עם GCC, binutils, GNU Make, Python 3, QEMU ו־GDB.
-בסביבת Debian/Ubuntu עם הרשאת התקנה:
+Use Linux x86_64 with GCC, binutils, GNU Make, Python 3, QEMU, and GDB.
+On Debian/Ubuntu with permission to install system packages:
 
 ```sh
 sudo apt-get update
@@ -16,10 +17,11 @@ make test
 make test-gdb
 ```
 
-בסביבת הענן הנוכחית המהדר כבר מותקן ואין הרשאת root. הסקריפט הבא מוריד
-חבילות Debian/Ubuntu מהמקורות המוגדרים, מחלץ אותן מקומית ויוצר wrappers
-עם נתיבי ספריות וקושחה. הוא אינו מתקין חבילות במערכת; הוא מיועד למכונה
-שכבר כוללת את כלי הבנייה והתלויות הבסיסיות שלה.
+In the current cloud environment, the compiler is already installed and root
+access is unavailable. The following script downloads Debian/Ubuntu packages
+from the configured repositories, extracts them locally, and creates wrappers
+with library and firmware paths. It does not install system packages. It assumes
+the machine already has build tools and their basic dependencies.
 
 ```sh
 sh scripts/setup-local-tools.sh
@@ -29,33 +31,34 @@ make test
 make test-gdb
 ```
 
-אפשר לתת לסקריפט נתיב חלופי. בהרצה שאומתה השתמשנו ב־
-`sh scripts/setup-local-tools.sh /workspace/kernel-tools`, ואז הוספנו
-`/workspace/kernel-tools/bin` ל־`PATH`. נדרשת רשת להורדת החבילות; במקרה
-של כשל זמני בהורדה ניתן להריץ שוב. ארכיונים שכבר הורדו נשמרים במטמון.
+The script accepts an alternative directory. The verified setup used
+`sh scripts/setup-local-tools.sh /workspace/kernel-tools`, followed by adding
+`/workspace/kernel-tools/bin` to `PATH`. Package downloads require network access.
+Rerun the script after a temporary download failure; downloaded archives remain
+cached.
 
-## תוצרים ופקודות
+## Artifacts and commands
 
-| פקודה | תוצאה |
+| Command | Result |
 | --- | --- |
-| `make all` | `build/kernel.bin` לטעינה ו־`build/kernel.elf` עם סמלי דיבוג |
-| `make run` | הרצה ב־QEMU עם פלט סריאלי למסוף; Ctrl-C לסיום |
-| `make test` | אימות הכותרת והסמלים, ואתחול אורח אמיתי עם מגבלת 10 שניות |
-| `make test-gdb` | עצירה ב־`kernel_main` ואימות רגיסטרים, long mode ויישור מחסנית |
-| `make debug` | QEMU מושהה עם GDB ב־`127.0.0.1:1234` |
-| `make clean` | מחיקת תיקיית התוצרים |
+| `make all` | Loadable `build/kernel.bin` and `build/kernel.elf` with debug symbols |
+| `make run` | QEMU with serial output in the terminal; press Ctrl-C to stop |
+| `make test` | Header and symbol validation, followed by a real guest boot with a 10-second limit |
+| `make test-gdb` | Stop at `kernel_main` and verify registers, long mode, and stack alignment |
+| `make debug` | Paused QEMU with GDB listening on `127.0.0.1:1234` |
+| `make clean` | Remove the build directory |
 
-ניתן להגדיר `QEMU`,‏ `GDB` ו־`PYTHON` דרך Make. הרצת הבדיקות נעשית משורש
-הריפו. בדיקת האתחול שומרת את `build/serial.log`,‏ `build/qemu.stderr.log`
-ו־`build/boot-result.json`, הכולל מגבלת זמן, קוד יציאה וסיבת הסיום.
-הקרנל נעצר ב־`hlt` אחרי ההדפסה; הבדיקה מסיימת את QEMU בעצמה אחרי זיהוי
-הסמן. קוד היציאה לבדו אינו מעיד על הצלחת אתחול.
+Override `QEMU`, `GDB`, and `PYTHON` through Make as needed. Run tests from the
+repository root. The boot test saves `build/serial.log`, `build/qemu.stderr.log`,
+and `build/boot-result.json`, which records the timeout, exit code, and termination
+information. The kernel halts with `hlt` after printing; the test terminates QEMU
+after observing the marker. The exit code alone does not establish boot success.
 
-בדיקת GDB משתמשת בפורט loopback פנוי ושומרת `build/gdb.log` וכן
-`build/gdb-qemu.stderr.log`. היא מוגבלת בזמן ומנקה את תהליך QEMU גם בכשל.
-סביבת sandbox שחוסמת sockets מקומיים צריכה לאפשר את ההרצה הזאת.
+The GDB test uses an available loopback port and saves `build/gdb.log` and
+`build/gdb-qemu.stderr.log`. It is bounded and cleans up QEMU even on failure.
+A sandbox that blocks local sockets must allow this test to run.
 
-לדיבוג ידני, בשני מסופים:
+For manual debugging, use two terminals:
 
 ```sh
 # Terminal 1
@@ -64,33 +67,35 @@ make debug
 gdb -x debug.gdb
 ```
 
-GDB יעצור בכניסה ל־C ויציג את הרגיסטרים ואת ההוראות הבאות. פקודת
-`continue` תאפשר לקרנל להדפיס. `hbreak` מאפשר להציב breakpoint עוד לפני
-שהקושחה טוענת את הקרנל לזיכרון.
+GDB stops at the C entry point and displays registers and the next instructions.
+Use `continue` to let the kernel print. `hbreak` sets a breakpoint before firmware
+loads the kernel into memory.
 
-## מסלול האתחול
+## Boot path
 
-1. QEMU טוען את `kernel.bin` דרך `-kernel`. בתחילתו כותרת Multiboot v1
-   עם הדגל `0x10000` ושדות כתובת מפורשים: טעינה ב־`0x100000`, סוף התוכן,
-   סוף BSS וכתובת הכניסה. זוהי תמונה גולמית לטעינה ישירה; היא אינה ISO
-   או תמונת דיסק. התאימות לטעינה הזאת אומתה בפועל ב־QEMU.
-2. `src/boot.S` מתחיל ב־32 ביט עם פסיקות כבויות, טוען GDT וסגמנטים
-   שטוחים, מאפס BSS ומגדיר מחסנית. `linker.ld` קובע את כל הכתובות
-   ואת נקודת הכניסה במפורש.
-3. הקוד מקים טבלאות דפים בזיכרון המאופס וממפה את הג׳יגה הראשון בזהות,
-   בדפים של 2 MiB. לאחר הפעלת PAE, טעינת CR3, הגדרת EFER.LME והפעלת
-   paging, קפיצה רחוקה בוחרת סגמנט קוד של 64 ביט.
-4. מוגדרת מחסנית בגודל 16 KiB המיושרת לפי ABI, ונקרא `kernel_main`.
-   הקוד ב־C מאתחל UART מסוג 16550 ב־COM1 ל־115200 baud ומדפיס את הסמן.
-   אחר כך המעבד ממתין עם פסיקות כבויות, עד למימוש IDT וחריגות.
+1. QEMU loads `kernel.bin` through `-kernel`. Its Multiboot v1 header sets flag
+   `0x10000` and explicit address fields: load address `0x100000`, end of file
+   contents, end of BSS, and entry address. This raw image is for direct loading,
+   rather than an ISO or disk image. Compatibility with this QEMU loader has
+   been verified by executing the guest.
+2. `src/boot.S` starts in 32-bit mode with interrupts disabled, loads a GDT and
+   flat segments, clears BSS, and establishes a stack. `linker.ld` explicitly
+   defines the memory layout and entry point.
+3. Startup code builds page tables in cleared memory and identity-maps the first
+   GiB with 2 MiB pages. After enabling PAE, loading CR3, setting EFER.LME, and
+   enabling paging, a far jump selects a 64-bit code segment.
+4. Startup code establishes a 16 KiB stack aligned according to the ABI and calls
+   `kernel_main`. C code initializes the COM1 16550 UART to 115200 baud and prints
+   the marker. The CPU then waits with interrupts disabled until exception
+   handling and an IDT are implemented.
 
-היעד הראשוני הוא CPU יחיד מדגם QEMU `qemu64`, עם long mode,‏ PAE
-ודפים גדולים זמינים. אין כרגע גילוי יכולות CPUID או הבטחה לאתחול על
-חומרה שרירותית. מידע האתחול של Multiboot עדיין אינו נצרך.
+The initial target is one QEMU `qemu64` CPU with long mode, PAE, and large pages
+available. There is no CPUID capability detection or guarantee of booting on
+arbitrary hardware yet. Multiboot boot information is not consumed yet.
 
-הבנייה היא freestanding, ללא libc,‏ PIE,‏ stack protector או red zone.
-`-mgeneral-regs-only` מונע שימוש אוטומטי ב־SIMD/נקודה צפה לפני אתחול מצב
-המעבד המתאים. QEMU רץ ב־TCG, עם רשת כבויה, ללא חיבור דיסקים או תיקיות
-מהמארח. אין צורך ב־KVM.
+Compilation is freestanding, without libc, PIE, the stack protector, or the red
+zone. `-mgeneral-regs-only` prevents compiler-generated SIMD/floating-point
+instructions before the required CPU state is initialized. QEMU uses TCG with
+networking disabled and no host disks or directories attached. KVM is optional.
 
-הראיות להרצה והצעד הבא מופיעים ב־[PROGRESS.md](PROGRESS.md).
+See [PROGRESS.md](PROGRESS.md) for validation evidence and the next step.
